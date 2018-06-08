@@ -13,5 +13,7 @@ CHIP Inc16 {
     OUT out[16];
 
     PARTS:
-   // Put you code here:
+    // I'm setting a equal to all input bits and then setting the first bit of b == 1
+    // All bits of out == to all bits of returned
+    Add16(a[0..15]=in[0..15], b[0]=true, out[0..15]=out[0..15]);
 }
