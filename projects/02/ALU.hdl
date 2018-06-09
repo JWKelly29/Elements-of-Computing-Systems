@@ -7,7 +7,7 @@
  * The ALU (Arithmetic Logic Unit).
  * Computes one of the following functions:
  * x+y, x-y, y-x, 0, 1, -1, x, y, -x, -y, !x, !y,
- * x+1, y+1, x-1, y-1, x&y, x|y on two 16-bit inputs, 
+ * x+1, y+1, x-1, y-1, x&y, x|y on two 16-bit inputs,
  * according to 6 input bits denoted zx,nx,zy,ny,f,no.
  * In addition, the ALU computes two 1-bit outputs:
  * if the ALU output == 0, zr is set to 1; otherwise zr is set to 0;
@@ -27,8 +27,8 @@
 // if (out < 0) set ng = 1
 
 CHIP ALU {
-    IN  
-        x[16], y[16],  // 16-bit inputs        
+    IN
+        x[16], y[16],  // 16-bit inputs
         zx, // zero the x input?
         nx, // negate the x input?
         zy, // zero the y input?
@@ -36,11 +36,42 @@ CHIP ALU {
         f,  // compute out = x + y (if 1) or x & y (if 0)
         no; // negate the out output?
 
-    OUT 
+    OUT
         out[16], // 16-bit output
         zr, // 1 if (out == 0), 0 otherwise
         ng; // 1 if (out < 0),  0 otherwise
 
     PARTS:
-   // Put you code here:
+
+    Not16 (in=x, out=notX);
+    Not16 (in=false, out=zNotX);
+    Not16 (in=y, out=notY);
+    Not16 (in=false, out=zNotY);
+
+    // x operations
+    Mux4Way16(a=x, b=notX, c=false, d=zNotX, sel[0]=nx, sel[1]=zx, out=tempX);
+
+    // y operations
+    Mux4Way16(a=y, b=notY, c=false, d=zNotY, sel[0]=ny, sel[1]=zy, out=tempY);
+
+    // f function on x and y
+    Add16(a=tempX, b=tempY, out=xAddY);
+    And16(a=tempX, b=tempY, out=xAndY);
+    Mux16(a=xAndY, b=xAddY, sel=f, out=tempOut);
+
+    // no function on out + define ng, 1halfOut and 2halfOut
+    Not16 (in=tempOut, out=notTempOut);
+    Mux16(a=tempOut, b=notTempOut, sel=no, out=out, out[0..7]=halfOutOne, out[8..15]=halfOutTwo, out[15]=ng);
+
+    // Doing 2 8 way ors on both halves of output to find a 1.
+    Or8Way(in=halfOutOne, out=HalfOrOne);
+    Or8Way(in=halfOutTwo, out=HalfOrTwo);
+
+    // Or both previous or results to find out if there's a zero in out.
+    Or(a=HalfOrOne, b=HalfOrTwo, out=orResult);
+
+    // If or is zero then zr needs to be one
+    Not(in=orResult, out=zr);
+
+
 }
