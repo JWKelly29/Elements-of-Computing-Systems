@@ -16,5 +16,18 @@ CHIP PC {
     OUT out[16];
 
     PARTS:
-    // Put your code here:
+    // increment input
+    Inc16(in = feedbackLoopIn, out = incOut);
+
+    // shall we increment input or keep our feedbackLoop
+    Mux16(a = feedbackLoopIn, b = incOut, sel = inc, out = incdecision);
+
+    // shall we keep our our output from the previous chip or load a new input
+    Mux16(a = incdecision, b = in, sel = load, out = loaddecision);
+
+    // shall we keep our output from the previous chip or reset it
+    Mux16(a = loaddecision, b = false, sel = reset, out = resetdecision);
+
+    // store output in memory, out and feed into first chip
+    Register(in = resetdecision, load = true, out = feedbackLoopIn, out = out);
 }
