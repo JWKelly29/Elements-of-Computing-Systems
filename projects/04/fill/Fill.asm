@@ -21,152 +21,41 @@
 // while a keyboard input is not pressed, and black loop while it is pressed. The loops only
 // need to be run once.
 
-@screenBlack
-M=0
-@clearScreen
-M=1
-
-// This is the main loop which will be run continuously, checking if the a Keyboard input is pressed
-
-(KBDLOOP)
-
-// set a variable to reference screen. sc gets altered in the WHITELOOP and BLACKLOOP.
-@SCREEN
-D=A
-@sc
-M=D
-
-// The screen is a memory map of 8k bits starting at location 16384. n tells us how many bits we need to alter.
-@8000
-D=A
-@n
-M=D
+// 
 
 
-// We will determine if i - n > 0 at the end of each loop (this will happen when i = 8001).
-// If so we have run the loop over 8000 bits and may jump back to KBDLOOP
-@i
-M=1
-
-// is a key being pressed
-@KBD
-D=M
-
-// jump to ISSCREENBLACK if KBD is > 0, meaning a key is pressed.
-@ISSCREENBLACK
-D;JGT
-// jump to ISCLEARSCREEN if KBD is = 0, meaining a key is not pressed.
-@ISCLEARSCREEN
-D;JEQ
-
-// jump back to start if for some reason none of the above conditions are met.
-@KBDLOOP
-0;JMP
-
-
-(ISSCREENBLACK)
-// if screen is already black jump back to KBDLOOP else jump to BLACKLOOP
-@screenBlack
-D = M
-@BLACKLOOP
-D;JEQ
-
-@KBDLOOP
-0;JMP
-
-(ISCLEARSCREEN)
-// if screen is already clear jump back to KBDLOOP else jump to WHITELOOP
-@clearScreen
-D = M
-@WHITELOOP
-D;JEQ
-
-@KBDLOOP
-0;JMP
-
-
-(ENDBLACKLOOP)
-// set screenBlack to 1 and clearScreen to 0 to so this loop does not run a again.
-@screenBlack
-M=1
-@clearScreen
-M=0
-@KBDLOOP
-0;JMP
-
-(BLACKLOOP)
-
-
-// check if i - n > 0, if so goto KBDLOOP
-@i
-D=M
-@n
-D=D-M
-@ENDBLACKLOOP
-D;JGT
-
-// set the memory location we're altering to the value located in sc
-// set the memory locations value to -1
-@sc
-A = M
-M=-1
-
-// increment the value stored in sc so that we can alter the next bit
-@1
-D=A
-@sc
-M = M + D
-
-// increment i
-@i
-// i = i + 1
-M=M+1
-@BLACKLOOP
-0;JMP
-
-
-(ENDWHITELOOP)
-// set screenBlack to 0 and clearScreen to 1 to so this loop does not run a again.
-@screenBlack
-M=0
-@clearScreen
-M=1
-@KBDLOOP
-0;JMP
-
-(WHITELOOP)
-// check if i - n > 0, if so goto KBDLOOP
-@i
-D=M
-@n
-D=D-M
-@ENDWHITELOOP
-D;JGT
-
-// set the memory location we're altering to the value located in sc
-// set the memory locations value to 0
-@sc
-A = M
-M = 0
-
-// increment the value stored in sc so that we can alter the next bit
-@1
-D=A
-@sc
-M = M + D
-
-// increment i
-@i
-// i = i + 1
-M=M+1
-
-// jump back to start of the loop
-@WHITELOOP
-0;JMP
-
-
-
-// If for any reason we do not jump back to KBDLOOP catch here to end program in continuous loop
-(END)
-@END
-0;JMP
+        @8192   
+        D=A
+        @count
+        M=D     // count = 8192 (# of bytes)
+(LOOP)
+        @index
+        M=0     // index = 0
+(INNER)
+        @KBD
+        D=M
+        @WHITE
+        D;JEQ   // goto WHITE if KBD value is 0
+(BLACK)
+        @index
+        D=M
+        @SCREEN
+        A=A+D   // Calculate byte address
+        M=-1    // Fill with black
+        @END
+        0;JMP   // goto END
+(WHITE)
+        @index
+        D=M
+        @SCREEN
+        A=A+D   // Calculate byte address
+        M=0     // Fill with white
+(END)   
+        @index
+        MD=M+1  // Increment index by 1
+        @count
+        D=D-M
+        @LOOP
+        D;JEQ   // goto LOOP if count - index == 0
+        @INNER
+        0;JMP   // goto INNER
